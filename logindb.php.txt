@@ -1,0 +1,79 @@
+<!-- print error log if required -->
+<?php
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
+
+session_start();
+
+$email = $_POST["email"];
+$password = $_POST["password"];
+
+// for debug
+error_log("User details	: " . $email . " " . $password, 0); 
+
+// if email and password are valid, then let the user in. otherwise return them to the login screen. 
+if (validate($email, $password))  {
+	processGoodLogin();
+} else {
+	processBadLogin();
+}
+
+function validate($email, $password) {
+	$status = checkCreds($email, $password);
+	return $status;
+}
+
+// get connection to local MySQL database
+function getDBConnection() {
+	$servername = "localhost";
+	$username = "root";
+	$password = "";
+	$dbname = "nicb";
+
+
+	// Create connection
+	$conn = mysqli_connect($servername, $username, $password, $dbname);
+	// Check connection
+	if (!$conn) {
+  		die("Connection failed: " . mysqli_connect_error);
+	}
+    return $conn;
+}
+
+// check the credentials to ensure theyre on the database
+function checkCreds($email, $password) {
+	$conn = getDBConnection();
+
+	$sql = "SELECT id FROM users";
+	$sql = $sql . " where email='" . $email . "' AND password='" . $password . "';";
+
+	$result = mysqli_query($conn, $sql);
+	// if the query returns only one result, email and password are OK
+	if (mysqli_num_rows($result) == 1) {
+		$status = True;
+	} else {
+		$status = False;
+	}
+
+	// Close the connection 
+	mysqli_close($conn);
+	return $status;	
+}
+
+
+// Process good login
+function processGoodLogin() {
+	$_SESSION["status"] = "LoggedIn";
+	header("Location: home.php");
+	exit();
+}
+
+// Process bad login
+function processBadLogin() {
+	$_SESSION["status"] = "NotLoggedIn";
+	$_SESSION['login_error_msg'] = "Sorry, that user name or password is incorrect. Please try again.";
+	header("Location: index-old.php");
+	exit();
+}
+
+?>
